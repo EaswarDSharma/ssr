@@ -1,0 +1,6 @@
+reducers - arrow func takes state action 
+has switch case for action.type returns state
+action-creators returns function taking a term , dispatch action of imported type does logic dispatch action with payload
+reducers sets state
+action creators changes state variables through dispatch func, dispatch(type,payload) 
+action creators does logic and dispatch for change.

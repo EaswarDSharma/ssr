@@ -1,0 +1,111 @@
+redux summarize, then 5.
+1.get coding
+rendertostring to generate raw html of all components which is first o/p of code
+running webpack on server, target entry o/p; build/bundle.js serversidecode
+2.server config
+-nodemon
+-since we are running through webpack change commonjs nodejs imports to es2015 import from  
+-a public client js file for js functions event handler, give it as src with previous html
+-creating client.js a config to make bundle.js to send to browser
+-provide a the routes to load components again in client.js with linking root id 
+with hydrate/render in client.js
+3.refactor
+-client base webpack configs
+-script for run all
+-exclude node_modules in server-side by webpackNodeExternals()
+-renderer.js returns html with renderToString(<Component/>),index.js server code now returns
+renderer as res
+4.navigation
+-routes.js to share with client and server code, in client js instead of component hydration
+pass browerrouter with routes
+-since renderer is used in index.js the server code, import staticrouter & routesjs into it
+replace component in rendertostring with route in staticrouter
+-to staticRouter pass props context={{}} empty obj , context is used for re directs and error
+handlings
+ browserRouter knows the path, but staticRouter needs to be told, prop location= req.path
+ to renderer in indexjs pass req
+-in indexjs change get / to get *, components are now loaded automatically btw
+5.redux
+-3 reducers for catch 3 lists of users, admins, auth status and 3 action-creators for these
+-4 challenges- diff redux config on server n client
+ need to detect when data loading action creators are completed on server
+-on client.js,browser side, send store to provider
+-not immediatly using provider to prevent update before making communication
+ separate store file is for future adding. creating store in route handling indexjs instead
+ of renderer, after some logic, store initialization and data loading we pass it to renderer
+ responce, res.send(renderer(req,store)),then add provider with store in renderer.js
+-creating/defining type & action creator to set dipatch
+-creating reducers n index for it for combined reducer export to client n createstore
+-creating userList component, 
+- importing babel-polyfill makes us able to use async on action creator
+6.data loading on server side
+-write functions to tell us what data needed for components before rendering (data-sol-2)
+-changing routing style for react-router-config, define routes with components for that path
+-update in server side and client side routing calls with renderRoutes from reactrouterconfig
+-matchRoutes to know the components loads for routes, in index.js , 
+-create and do named export of loaddata func. inside component and import to router create 
+obj of func. in route
+-loaddata in component initiate data needed by component, each path has a component and 
+ loaddata func , server index.js figures the req.path and components for it and runs 
+ loaddata of each component
+-map matchRoutes to know component that loads, if it has loaddata func, call it. here we 
+figure out which loaddata funcs to call, after sending html
+-call loaddata functions, passing em store. in each dispatch action-creator
+ which returns a promise after completion. after resolved render apllication
+-pass store into loaddata and return a call of action-creators in store.dispatch(_), which 
+ is promise
+-matchRoutes.map now will return an array of promises, by all loaddata funcs. once all 
+ resolved we will send res.send(renderer(req,store));
+--we did not use connect in loaddata, instead used store to dispatch action creator
+-connnect function works communicating provider tag which has reference to store. since we 
+ need to load data before rendering , no connect 
+-action creators returns action which passes through the dispatch function of redux, then 
+logic middlewares and eventually send results to reducers
+-  connect , dispatch
+7.page
+-root level components are page components, they can show re usable component underneath, 
+ at this page level where we introduce data loading requirements n customizations
+-reusable to components to components dir., routes to pages dir.
+-instead of export import many loaddata func variables into routes or so files, export 
+ wrapped obj with both component and loaddata. this can be unwrapped in routes by ...page
+-state rehydration on browser:
+-server redux fetcheds data -> gets a fully popuplated store with bunch of redux state
+-we use this to render app to html, i.e page rendered on server-page html sent to browser-
+ client bundle.js sent to browser- bundle creates a new client side store- page is hydrated
+ with store from client side redux. so store state comm.
+-the html from server side can't sync with empty data on client side, results in tag errors
+-solution is to dump state into html first, initialize client side store with this
+-in sending html before src= bundle.js, add a script of window=INITIAL_STATE=
+${JSON.stringify(store.getState())}. and in client.js pass this in createstore, after
+ reducers
+---don't just leave all data fetching to server, navigation may trick 
+-serialize-javascript ${serialize(store.getState())}
+
+-categorize components based on loaddata requirements
+8.authentication
+-can't share cookies with render server, whic might be on diff domain/subdomain or port
+ so use proxy
+-render serverhandles  all reqs, secured ones through a proxy
+-jwt use , we make req first and send follow up req with jwt
+-cookies can be included in requests so one is enough 
+-express-http-proxy    -> /api -> backend server http://api.heroku.com
+-if on server res= .get( http://api.heroku.com/users)
+-on browser res= .get(/api/users,{cookie});
+-reducers/client.js axiosInstance=baseURL:'/api' send this to create store
+-createstore.js axiosInstance=baseURL:'/heroku.com', headers:{cookie:res.get('cookie')||"}
+-adding ...app to routes files with no mentioning of path, so it'll be always
+9.error
+-emtpy route handlers , with no path is specified in routes 
+-set status(404); in staticRouter prop obj context={{}} , the obj passed gives ability to 
+communicate from rendered component to render file
+-to every page component context prop is passed, same for notfoundage, at this page add 
+error obj
+-in ALL route handler define empty context obj, send it to routerender(req,store,context)
+Error
+-Promise are to be put inside a promise which always resolves
+-Error handling in done in react app for enabling it in both server side and in browser
+-A hoc with switch 
+-Redirect gives a context obj. If it has url property redirect with 301 status to .url
+10.SEO
+-OGP og meta tags
+-helmet 
